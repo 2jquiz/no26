@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Screen Background Image with Countdown and Quiz</title>
+    <link href="https://fonts.googleapis.com/earlyaccess/nikukyu.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/earlyaccess/kokoro.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Bangers&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Kaushan+Script&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-image: url('クイズ背景画像.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .quiz-header {
+            width: 100%;
+            text-align: center;
+            background-color: rgba(10, 10, 100, 0.1);
+            padding: 20px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 0;
+        }
+        .quiz-header h1 {
+            margin: 0;
+            font-size: 10vw; /* Responsive font size */
+            color: #2b2b2b;
+            font-family: 'Bangers', cursive;
+            background: linear-gradient(90deg, #ff6a6a, #ffd700, #66ff66, #66b3ff);
+            background-size: 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; /* For text gradient */
+        }
+        .quiz-question {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            width: 85%;
+            height: 300px;
+            margin: 0 auto;
+            position: relative;
+            top: 16%;
+            transform: translateY(16%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 5px solid #333;
+            border-radius: 10px;
+        }
+        .quiz-question h2 {
+            margin: 0;
+            font-size: 3vw; /* Responsive font size */
+            color: #333;
+        }
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2列に固定 */
+            gap: 10px;
+            width: 100%;
+	    
+        }
+        .option {
+            padding: 30px 0;
+            border: none;
+	    height: 150px;
+            border-radius: 10px;
+            font-size: 4vw; /* Responsive font size */
+            cursor: pointer;
+            background-color: #ddd;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s ease;
+            border: 4px solid #333;
+        }
+        .red { background-color: #ff6666; }
+        .yellow { background-color: #ffeb3b; }
+        .green { background-color: #66ff66; }
+        .blue { background-color: #66b3ff; }
+        .option:hover {
+            opacity: 0.8;
+        }
+        .timer-box {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 255, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 5vw; /* Responsive font size */
+            text-align: center;
+            z-index: 1000;
+            font-family: "Nico Moji", serif;
+        }
+        .popup {
+            display: none; 
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            color: black;
+            padding: 50px;
+            border-radius: 10px;
+            font-size: 4vw; /* Responsive font size */
+            text-align: center;
+            z-index: 999;
+            font-family: "Kokoro", serif;
+        }
+        .start-button {
+            background-color: #4a488e;
+            color: white;
+            position: fixed;
+            top: 32%;
+            left: 32%;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 10vw; /* Responsive font size */
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            font-family: 'Kaushan Script', cursive;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-header">
+        <h1>Question</h1>
+    </div>
+
+    <button class="start-button" onclick="startGame()">START</button>
+
+    <div class="quiz-question" style="display:none;">
+        <h2>うるう年の1年間は何日でしょうか？</h2>
+    </div>
+
+    <div class="quiz-options-container" style="display:none;">
+        <div class="quiz-options">
+            <button class="option red" onclick="checkAnswer(false)">365日</button>
+            <button class="option yellow" onclick="checkAnswer(false)">364日</button>
+            <button class="option green" onclick="checkAnswer(false)">365日</button>
+            <button class="option blue" onclick="checkAnswer(true)">366日</button>
+        </div>
+    </div>
+
+    <div id="timer" class="timer-box" style="display:none;">
+        15
+    </div>
+
+    <div id="popup" class="popup"></div>
+    <audio id="correctSound" src="correct_answer3.mp3"></audio>
+    <audio id="wrongSound" src="不正解2.mp3"></audio>
+    <audio id="countdownSound" src="tikutaku.mp3"></audio>
+    <audio id="startSound" src="出題3.mp3"></audio>
+    <script>
+        let timeLimit = 15;
+        let timerElement = document.getElementById('timer');
+        let popupElement = document.getElementById('popup');
+        let isAnswered = false; 
+        let countdown;
+
+        function startGame() {
+            startSound.play();
+            document.querySelector('.quiz-question').style.display = 'flex';
+            document.querySelector('.quiz-options-container').style.display = 'block';
+            document.getElementById('timer').style.display = 'block';
+            document.querySelector('.start-button').style.display = 'none';
+            timeLimit = 15; // Reset time
+            timerElement.innerText = timeLimit; 
+            isAnswered = false; 
+            countdown = setInterval(function() {
+                if (timeLimit > 0) {
+                    timeLimit--; 
+                    timerElement.innerText = timeLimit; 
+                    countdownSound.play(); // 音声を再生
+                } else {
+                    clearInterval(countdown); 
+                    popupElement.style.display = 'block';
+                    popupElement.innerText = '時間切れ！';   
+                    disableOptions();
+                    wrongSound.play();
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(isCorrect) {
+            if (isAnswered || timeLimit <= 0) return; 
+
+            isAnswered = true; 
+            clearInterval(countdown); 
+            if (isCorrect) {
+                popupElement.style.display = 'block';
+                popupElement.innerText = '正解';
+                correctSound.play();
+                setTimeout(function() {
+                    popupElement.innerText = 'GAME CLEAR!\n解除コードの一桁目は\n『7』'; 
+                }, 2000);
+            } else {
+                popupElement.style.display = 'block';
+                popupElement.innerText = '残念！不正解です';
+                wrongSound.play(); 
+            }
+            disableOptions(); 
+        }
+
+        function disableOptions() {
+            let options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                option.disabled = true;
+                option.style.opacity = '0.5'; 
+            });
+        }
+    </script>
+
+</body>
+</html>
